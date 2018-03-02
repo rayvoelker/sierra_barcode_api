@@ -1,0 +1,2 @@
+[db]
+	connection_string = dbname='iii' user='PUT_USERNAME_HERE' host='sierra-db.schoolname.org' password='PUT_PASSWORD_HERE' port=1032
