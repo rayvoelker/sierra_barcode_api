@@ -1,6 +1,5 @@
 import sys, psycopg2, datetime, configparser
-from flask import Flask
-from flask import json
+from flask import Flask, json
 from flask_restful import Resource, Api
 
 
