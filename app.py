@@ -1,10 +1,7 @@
-import sys
-from flask import Flask
-from flask import json
+import sys, psycopg2, datetime, configparser
+from flask import Flask, json
 from flask_restful import Resource, Api
-import psycopg2
-import datetime
-import configparser
+
 
 def clear_connection():
 	if 'conn' in globals():
