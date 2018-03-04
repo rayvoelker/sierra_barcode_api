@@ -2,7 +2,7 @@ import sys, psycopg2, datetime, configparser
 from flask import Flask, json
 from flask_restful import Resource, Api
 
-
+# this will clear and close the connection
 def clear_connection():
 	if 'conn' in globals():
 		global conn
@@ -26,77 +26,102 @@ config.read('app.ini')
 app = Flask(__name__)
 api = Api(app)
 
-# not sure if we should connect to the db for each request .. or connect to the db, and stay connected... doing the latter for now
-try:
-	# variable connection string should be defined in the imported config file
-	conn = psycopg2.connect( config['db']['connection_string'] )
-except:
-	print("unable to connect to the database")
-	clear_connection()
-	sys.exit(1)
+class GetItemInfo(Resource):
+	def get(self, barcode):
+		# we may want to consider moving the connection to the main application,
+		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
+		try:
+			# variable connection string should be defined in the imported config file
+			conn = psycopg2.connect( config['db']['connection_string'] )
+		except:
+			print("unable to connect to the database")
+			clear_connection()
+			return
+			# sys.exit(1)
 
-# here's our base query ...
-sql = """\
----
-SELECT
-upper(p.call_number_norm) AS call_number_norm,
-v.field_content AS volume,
-i.location_code,
-i.item_status_code,
-b.best_title,
-c.due_gmt,
-i.inventory_gmt
+		# here's our base query ...
+		sql = """\
+		---
+		SELECT
+		upper(p.call_number_norm) AS call_number_norm,
+		v.field_content AS volume,
+		i.location_code,
+		i.item_status_code,
+		b.best_title,
+		c.due_gmt,
+		i.inventory_gmt
 
-FROM
-sierra_view.phrase_entry AS e
-JOIN
-sierra_view.item_record_property AS p
-ON
-  e.record_id = p.item_record_id
-  JOIN sierra_view.item_record AS i
-ON
-  i.id = p.item_record_id
-LEFT OUTER JOIN sierra_view.checkout AS c
-ON
-  i.id = c.item_record_id
--- This JOIN will get the Title and Author from the bib
-JOIN
-sierra_view.bib_record_item_record_link	AS l
-ON
-  l.item_record_id = e.record_id
-JOIN
-sierra_view.bib_record_property AS b
-ON
-  l.bib_record_id = b.bib_record_id
+		FROM
+		sierra_view.phrase_entry AS e
+		JOIN
+		sierra_view.item_record_property AS p
+		ON
+		  e.record_id = p.item_record_id
+		  JOIN sierra_view.item_record AS i
+		ON
+		  i.id = p.item_record_id
+		LEFT OUTER JOIN sierra_view.checkout AS c
+		ON
+		  i.id = c.item_record_id
+		-- This JOIN will get the Title and Author from the bib
+		JOIN
+		sierra_view.bib_record_item_record_link	AS l
+		ON
+		  l.item_record_id = e.record_id
+		JOIN
+		sierra_view.bib_record_property AS b
+		ON
+		  l.bib_record_id = b.bib_record_id
 
-LEFT OUTER JOIN
-sierra_view.varfield AS v
-ON
-  (i.id = v.record_id) AND (v.varfield_type_code = 'v')
-WHERE
-e.index_tag || e.index_entry = 'b' || LOWER('0989053860015')
----
-"""
+		LEFT OUTER JOIN
+		sierra_view.varfield AS v
+		ON
+		  (i.id = v.record_id) AND (v.varfield_type_code = 'v')
+		WHERE
+		e.index_tag || e.index_entry = 'b' || LOWER('%s')
+		--e.index_tag || e.index_entry = 'b' || LOWER('0989053860015')
+		---
+		"""
 
-try:
-	cur = conn.cursor()
-	cur.execute(sql)
+		# TODO
+		# make sure we do some sort of sanitization of the barcode variable
+		# before we send the query to the db (i think that psycopg2 does this by default)
 
-except:
-	print("error connecting or running query sql")
-	clear_connection()
-	sys.exit(1)
+		try:
+			# cur = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+			cur = conn.cursor()
+			cur.execute(sql % (barcode))
 
-output = ( list( cur.fetchone() ) )
-# print the output to standard out ...
-print(output)
+		except:
+			print("error connecting or running query sql")
+			clear_connection()
+			return
+			# sys.exit(1)
 
-class HelloWorld(Resource):
+		# output = cur.fetchone()
+		output = cur.fetchone()
+
+		# TODO
+		# don't have the application crash when it can't find a barcode
+		return {'sql': sql % (barcode),
+			'data': {'call_number_norm': output[0] or '',
+				'volume': output[1] or '',
+				'location_code': output[2] or '',
+				'item_status_code': output[3] or '',
+				'best_title': output[4] or '',
+				'due_gmt': str(output[5]) or '',
+				'inventory_gmt': str(output[6] or '')
+			}
+		}
+
+class default(Resource):
 	def get(self):
-		#return {'hello': 'world'}
-		return json.dumps(output)
+		return {'TODO': 'create a usage instruction page, or send an error',
+			'example_url': 'http://127.0.0.1:5000/0989053860015'
+		}
 
-api.add_resource(HelloWorld, '/')
+api.add_resource(GetItemInfo, '/<string:barcode>')
+api.add_resource(default, '/')
 
 if __name__ == '__main__':
-	app.run(debug=True)
+	app.run(debug=True, port=5001)
