@@ -1,4 +1,4 @@
-import sys, psycopg2, datetime, configparser
+import sys, psycopg2, datetime, configparser, bleach
 from flask import Flask, json
 from flask_restful import Resource, Api
 
@@ -30,6 +30,9 @@ class GetItemInfo(Resource):
 	def get(self, barcode):
 		# we may want to consider moving the connection to the main application,
 		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
+
+		barcode = bleach.clean(barcode)
+
 		try:
 			# variable connection string should be defined in the imported config file
 			conn = psycopg2.connect( config['db']['connection_string'] )
@@ -101,9 +104,12 @@ class GetItemInfo(Resource):
 		# output = cur.fetchone()
 		output = cur.fetchone()
 
+
+
 		# TODO
 		# don't have the application crash when it can't find a barcode
-		return {'sql': sql % (barcode),
+
+		return {
 			'data': {'call_number_norm': output[0] or '',
 				'volume': output[1] or '',
 				'location_code': output[2] or '',
@@ -114,14 +120,14 @@ class GetItemInfo(Resource):
 			}
 		}
 
+
 class default(Resource):
 	def get(self):
 		return {'TODO': 'create a usage instruction page, or send an error',
-			'example_url': 'http://127.0.0.1:5000/0989053860015'
+			'example_url': 'http://127.0.0.1:5001/0989053860015'
 		}
-
 api.add_resource(GetItemInfo, '/<string:barcode>')
 api.add_resource(default, '/')
 
 if __name__ == '__main__':
-	app.run(debug=True, port=5001)
+	app.run(debug=False, port=5001)
