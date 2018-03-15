@@ -104,8 +104,6 @@ class GetItemInfo(Resource):
 		# output = cur.fetchone()
 		output = cur.fetchone()
 
-
-
 		# TODO
 		# don't have the application crash when it can't find a barcode
 
