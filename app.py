@@ -1,4 +1,4 @@
-import sys, psycopg2, datetime, configparser, bleach
+import sys, psycopg2, datetime, configparser, re
 from flask import Flask, json
 from flask_restful import Resource, Api
 
@@ -31,7 +31,11 @@ class GetItemInfo(Resource):
 		# we may want to consider moving the connection to the main application,
 		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
 
-		barcode = bleach.clean(barcode)
+
+		p = re.compile('\d+') #this code only returns numbers=\d
+		b = p.findall(barcode)
+		barcode = b[-1] #stores last list item, in this case a barcode
+		#continue to parse barcode and pull out only the 14 character barcode
 
 		try:
 			# variable connection string should be defined in the imported config file
@@ -108,6 +112,7 @@ class GetItemInfo(Resource):
 		# don't have the application crash when it can't find a barcode
 
 		return {
+
 			'data': {'call_number_norm': output[0] or '',
 				'volume': output[1] or '',
 				'location_code': output[2] or '',
@@ -116,6 +121,7 @@ class GetItemInfo(Resource):
 				'due_gmt': str(output[5]) or '',
 				'inventory_gmt': str(output[6] or '')
 			}
+
 		}
 
 
