@@ -1,4 +1,4 @@
-import sys, psycopg2, datetime, configparser, bleach
+import sys, psycopg2, datetime, configparser, re
 from flask import Flask, json
 from flask_restful import Resource, Api
 
@@ -31,7 +31,13 @@ class GetItemInfo(Resource):
 		# we may want to consider moving the connection to the main application,
 		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
 
-		barcode = bleach.clean(barcode)
+		#begin sanitize
+		p = re.compile('\d+') #\d config excludes anything except 0-9
+		b = p.findall(barcode) #this code only returns numbers=\d
+		barcode = b[-1] #only need this whilst testing on port 5001; stores last list item, in this case a barcode
+		if len(barcode) >14:
+			return 'barcode {} too long'.format(barcode)
+
 
 		try:
 			# variable connection string should be defined in the imported config file
@@ -99,7 +105,7 @@ class GetItemInfo(Resource):
 			print("error connecting or running query sql")
 			clear_connection()
 			return
-			# sys.exit(1)
+			# sys.exit(1) #don't use sys.exit; it will crash the python app rather than just returning error
 
 		# output = cur.fetchone()
 		output = cur.fetchone()
@@ -107,7 +113,7 @@ class GetItemInfo(Resource):
 		# TODO
 		# don't have the application crash when it can't find a barcode
 
-		return {'sql': sql % (barcode),
+		return { #'sql': sql % (barcode),
 			'data': {'call_number_norm': output[0] or '',
 				'volume': output[1] or '',
 				'location_code': output[2] or '',
