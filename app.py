@@ -31,7 +31,7 @@ class GetItemInfo(Resource):
 		# we may want to consider moving the connection to the main application,
 		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
 
-
+		#begin sanitize 
 		p = re.compile('\d+') #this code only returns numbers=\d
 		b = p.findall(barcode)
 		barcode = b[-1] #stores last list item, in this case a barcode
