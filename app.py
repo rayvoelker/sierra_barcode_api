@@ -35,8 +35,9 @@ class GetItemInfo(Resource):
 		p = re.compile('\d+') #\d config excludes anything except 0-9
 		b = p.findall(barcode) #this code only returns numbers=\d
 		barcode = b[-1] #only need this whilst testing on port 5001; stores last list item, in this case a barcode
-		if len(barcode) >14:
-			return 'barcode {} too long'.format(barcode)
+		if len(barcode) != 14:
+			return 'barcode {} is not 14 characters long'.format(barcode)
+		#length checker seems to freek out if you put a / in the middle of barcode
 
 
 		try:
