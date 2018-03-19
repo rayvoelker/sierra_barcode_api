@@ -34,8 +34,11 @@ class GetItemInfo(Resource):
 		#begin sanitize
 		p = re.compile('\d+') #\d config excludes anything except 0-9
 		b = p.findall(barcode) #this code only returns numbers=\d
-		barcode = b[-1] #stores last list item, in this case a barcode
-		#continue to parse barcode and pull out only the 14 character barcode
+		barcode = b[-1] #only need this whilst testing on port 5001; stores last list item, in this case a barcode
+		if len(barcode) >14:
+			return 'barcode {} too long'.format(barcode)
+
+		#continue to parse barcode and pull out only the 12-14 character barcode
 
 		try:
 			# variable connection string should be defined in the imported config file
@@ -103,7 +106,7 @@ class GetItemInfo(Resource):
 			print("error connecting or running query sql")
 			clear_connection()
 			return
-			# sys.exit(1)
+			# sys.exit(1) #don't use sys.exit; it will crash the python app rather than just returning error
 
 		# output = cur.fetchone()
 		output = cur.fetchone()
