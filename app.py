@@ -38,7 +38,6 @@ class GetItemInfo(Resource):
 		if len(barcode) >14:
 			return 'barcode {} too long'.format(barcode)
 
-		#continue to parse barcode and pull out only the 12-14 character barcode
 
 		try:
 			# variable connection string should be defined in the imported config file
