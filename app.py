@@ -111,8 +111,7 @@ class GetItemInfo(Resource):
 		# TODO
 		# don't have the application crash when it can't find a barcode
 
-		return {
-
+		return {'sql': sql % (barcode),
 			'data': {'call_number_norm': output[0] or '',
 				'volume': output[1] or '',
 				'location_code': output[2] or '',
@@ -121,7 +120,6 @@ class GetItemInfo(Resource):
 				'due_gmt': str(output[5]) or '',
 				'inventory_gmt': str(output[6] or '')
 			}
-
 		}
 
 
