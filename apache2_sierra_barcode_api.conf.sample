@@ -1,0 +1,21 @@
+# this is a working sample for loading a flask app via apache2
+# paths should be absolute, and coorispond to your system
+
+# This file should be placed into the /etc/apache2/sites-available/ directory.
+# It can then be enabled via the a2ensite command
+
+
+<VirtualHost *>	
+	ServerName local.com
+
+	# needed to add the home= as well as the python-home= path to get the configuration to load properly.
+	WSGIDaemonProcess sierra_barcode_api home=/home/plchuser/sierra_barcode_api python-home=/home/plchuser/sierra_barcode_api/env	
+	WSGIProcessGroup sierra_barcode_api
+	WSGIApplicationGroup %{GLOBAL}
+
+	WSGIScriptAlias /barcode /home/plchuser/sierra_barcode_api/app.wsgi
+
+	<Directory /home/plchuser/sierra_barcode_api>
+		Require all granted
+	</Directory>
+</VirtualHost>
