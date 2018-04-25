@@ -31,14 +31,11 @@ class GetItemInfo(Resource):
 		# we may want to consider moving the connection to the main application,
 		# so that it remains open (but then we have to make sure we reconnect and test for timeouts, etc)
 
-		#begin sanitize
-		p = re.compile('\d+') #\d config excludes anything except 0-9
-		b = p.findall(barcode) #this code only returns numbers=\d
-		barcode = b[-1] #only need this whilst testing on port 5001; stores last list item, in this case a barcode
-		if len(barcode) != 14:
-			return 'barcode {} is not 14 characters long'.format(barcode)
-		#length checker seems to freek out if you put a / in the middle of barcode
+		# strip anything out of the string that isn't alphanumeric
+		#TODO
+		# consider putting a limit on the number of characters we accept as well
 
+		barcode_strip = re.sub('[^A-Za-z0-9]+', '', barcode)
 
 		try:
 			# variable connection string should be defined in the imported config file
@@ -100,7 +97,7 @@ class GetItemInfo(Resource):
 		try:
 			# cur = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
 			cur = conn.cursor()
-			cur.execute(sql % (barcode))
+			cur.execute(sql % (barcode_strip))
 
 		except:
 			print("error connecting or running query sql")
@@ -114,7 +111,12 @@ class GetItemInfo(Resource):
 		# TODO
 		# don't have the application crash when it can't find a barcode
 
-		return { #'sql': sql % (barcode),
+		return {
+			# if we want the sql in the output, remove the next comment
+			# 'sql': sql % (barcode),
+			'barcode': str(barcode),
+			'barcode_strip': str(barcode_strip),
+			'date_searched': str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")),
 			'data': {'call_number_norm': output[0] or '',
 				'volume': output[1] or '',
 				'location_code': output[2] or '',
@@ -135,4 +137,4 @@ api.add_resource(GetItemInfo, '/<string:barcode>')
 api.add_resource(default, '/')
 
 if __name__ == '__main__':
-	app.run(debug=False, port=5001)
+	app.run(debug=False)
